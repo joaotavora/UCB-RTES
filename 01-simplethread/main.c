@@ -9,9 +9,6 @@ typedef struct
     int tid;
 } tparams_t;
 
-pthread_t threads[NUM_THREADS];
-tparams_t params[NUM_THREADS];
-
 void* count_locally(void* arg) {
   tparams_t* a = (tparams_t*)arg;
   int sum = 0;
@@ -22,6 +19,8 @@ void* count_locally(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
+  pthread_t threads[NUM_THREADS];
+  tparams_t params[NUM_THREADS];
 
   for (int i = 0; i<NUM_THREADS; ++i) {
     params[i].tid = i;
