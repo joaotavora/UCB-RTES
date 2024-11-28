@@ -28,18 +28,18 @@ template <typename F>
 struct args_impl : args_impl<decltype(&F::operator())> {};
 
 
-template <auto F, pthread_t Invalid = pthread_t{}>
+template <typename F, pthread_t Invalid = pthread_t{}>
 struct thread {
   pthread_t t_{Invalid};
-  args_impl<decltype(F)>::type args_{};
+  args_impl<F>::type args_{};
 public:
   thread() {}
 
   template <typename ...Args>
-  thread(Args... args) : args_{std::make_tuple(args...)}{
+  thread(F f, Args... args) : args_{std::make_tuple(args...)}{
     pthread_create(&t_, NULL, [](void* arg) -> void*{
       thread* self = reinterpret_cast<thread*>(arg); // NOLINT(*reinterpret-cast*)
-      std::apply(F, self->args_);
+      std::apply(F{}, self->args_); // SHADY
       return nullptr;
     }, this);
   }
@@ -73,12 +73,14 @@ int main(int argc, char *argv[]) {
     printf("Thread[%d] sum[1..%d]=%lu\n", tid, tid, sum);
   };
 
+  using thread_t = xpto::thread<decltype(fn)>;
+
   {
-    std::array<xpto::thread<fn>, num_threads> threads;
+    std::array<thread_t, num_threads> threads;
   
     // threads.reserve(num_threads);
     for (auto i = 0u; i < num_threads; ++i) {
-      threads.at(i) = xpto::thread<fn>{i};
+      threads.at(i) = xpto::thread{fn, i};
     }
   }
   // for (auto &t : threads) t.join();
