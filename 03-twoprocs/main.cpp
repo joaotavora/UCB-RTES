@@ -10,7 +10,7 @@
 #include "xpto/c_resource.hpp"
 
 namespace xpto {
-struct sem : private xpto::c_resource<sem_t, ::sem_open, ::sem_close, SEM_FAILED> {
+struct sem : private xpto::c_resource<sem_t*, ::sem_open, ::sem_close, SEM_FAILED> {
   using c_resource::c_resource;
 
   void wait() {
@@ -26,7 +26,8 @@ struct sem : private xpto::c_resource<sem_t, ::sem_open, ::sem_close, SEM_FAILED
 
 
 void wait1arg(int pid){::waitpid(pid, NULL, 0);}
-struct child : xpto::c_resource<int, ::fork, wait1arg> {};
+using forked_child = xpto::c_resource<int, ::fork, wait1arg, 0>;
+
 
 } // namespace xpto
 
@@ -37,7 +38,7 @@ int main() {
     xpto::sem child_sem{"/childsem", O_CREAT, 0700, 0};
     xpto::sem parent_sem{"/parentsem", O_CREAT, 0700, 0};
 
-    xpto::child child{};
+    xpto::forked_child child{xpto::forked_child::noargs_construct};
 
     if (child.empty()) {
       for (auto i = 0; i < 3; ++i){

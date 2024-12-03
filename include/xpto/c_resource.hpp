@@ -32,11 +32,11 @@ namespace xpto {
    *
    *
    * ADL.  Or with more arguments as usual.   */
-  template <typename T, auto* Construct, auto* Destruct, T* Invalid = {}>
+  template <typename T, auto* Construct, auto* Destruct, T Invalid = {}>
   class c_resource {
     using Constructor = decltype(Construct);
     using Destructor = decltype(Destruct);
-    T* payload_ = Invalid;
+    T payload_ = Invalid;
 
     struct noargs_construct_s {};
 
@@ -54,7 +54,7 @@ namespace xpto {
 
     template <typename... Args>
       requires(sizeof...(Args) > 0 &&
-               std::is_invocable_r_v<T*, decltype(Construct), Args...>)
+               std::is_invocable_r_v<T, decltype(Construct), Args...>)
     explicit(sizeof...(Args) == 1) c_resource(Args&&... args) noexcept
         : payload_{Construct(std::forward<Args>(args)...)} {}
 
@@ -85,10 +85,8 @@ namespace xpto {
 
     explicit operator bool() const noexcept { return payload_ != Invalid; }
     bool empty() const noexcept { return payload_ == Invalid; }
-    operator T*() noexcept { return payload_; }
-    operator const T*() const noexcept { return payload_; }
-    T* operator->() noexcept { return payload_; }
-    const T* operator->() const noexcept { return payload_; }
+    operator T() noexcept { return payload_; }
+    operator const T() const noexcept { return payload_; }
 
     void reset(T* ptr = Invalid) {
       Destruct(payload_);
