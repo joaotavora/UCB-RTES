@@ -46,7 +46,7 @@ namespace xpto {
     }
 
    public:
-    static constexpr noargs_construct_s noargs_construct;
+    static constexpr noargs_construct_s noargs_construct{};
 
     c_resource() noexcept = default;
 
