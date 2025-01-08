@@ -9,4 +9,5 @@ target_include_directories(xpto-lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/includ
 add_subdirectory(01-simplethread)
 add_subdirectory(02-incdecthread)
 add_subdirectory(03-twoprocs)
+add_subdirectory(04-simplethread-affinity)
 
