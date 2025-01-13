@@ -7,6 +7,7 @@
 #include <set>
 #include <tuple>
 
+#include "auto.hpp"
 #include "util.hpp"
 
 namespace xpto {
@@ -14,9 +15,15 @@ namespace xpto {
 class thread {
  public:
   struct attributes {
-    std::set<int> affinity;
-    size_t stack_size = 0;
-    std::string name = {};
+    enum policy_e { FIFO = SCHED_FIFO, RR = SCHED_RR, OTHER = SCHED_OTHER };
+
+    std::set<int> affinity{};
+    std::optional<size_t> stack_size{};
+    std::string name{};
+    std::optional<policy_e> policy{};
+    std::optional<int> prio{};
+
+   private:
   };
 
  private:
@@ -38,27 +45,49 @@ class thread {
     thread_model(thread_model &&) = default;
     thread_model &operator=(const thread_model &) = delete;
     thread_model &operator=(thread_model &&) = default;
-    thread_model(const attributes &attr, F f, Args... args)
+
+    thread_model(const attributes *attrs, F f, Args... args)
         : f_{std::move(f)}, args_{std::move(args)...} {
+      // Create the thread with specified attributes,
+      pthread_attr_t pattrs;
+      CCALL_OR_LOSE(pthread_attr_init(&pattrs));
+      AUTO(pthread_attr_destroy(&pattrs));
+
       cpu_set_t cpuset;
-      // Initialize the CPU set
       CPU_ZERO(&cpuset);
-      for (auto x : attr.affinity) CPU_SET(x, &cpuset);
+      for (auto x : attrs->affinity) CPU_SET(x, &cpuset);
+      CCALL_OR_LOSE(
+          pthread_attr_setaffinity_np(&pattrs, sizeof(cpuset), &cpuset));
+      if (attrs->stack_size)
+        CCALL_OR_LOSE(
+            pthread_attr_setstacksize(&pattrs, attrs->stack_size.value()));
 
-      // Create the thread with specified affinity
-      pthread_attr_t pattr;
-      CFUNCALL(pthread_attr_init(&pattr));
-      CFUNCALL(pthread_attr_setaffinity_np(&pattr, sizeof(cpu_set_t), &cpuset));
-      CFUNCALL(pthread_attr_setstacksize(&pattr, attr.stack_size));
+      if (attrs->policy) {
+        pthread_attr_setinheritsched(&pattrs, PTHREAD_EXPLICIT_SCHED);
+        pthread_attr_setschedpolicy(&pattrs, attrs->policy.value());
 
-      CFUNCALL(pthread_create(
-          &tid_, nullptr,
-          [](void *arg) -> void * {
-            auto self = static_cast<thread_model *>(arg);
-            std::apply(self->f_, self->args_);
-            return nullptr;
-          },
-          this));
+        struct sched_param sparam {};
+        int prio{};
+        if (attrs->prio)
+          sparam.sched_priority = attrs->prio.value();
+        else
+          sparam.sched_priority = sched_get_priority_max(attrs->policy.value());
+
+        // Not sure if this one is needed
+        CCALL_OR_LOSE(
+            sched_setscheduler(getpid(), attrs->policy.value(), &sparam));
+
+        pthread_attr_setschedparam(&pattrs, &sparam);
+      }
+
+      auto lambda = [](void *arg) -> void * {
+        auto self = static_cast<thread_model *>(arg);
+        std::apply(self->f_, self->args_);
+        return nullptr;
+      };
+
+      CCALL_OR_LOSE(pthread_create(&tid_, &pattrs, lambda, this));
+      CCALL_OR_LOSE(pthread_setname_np(tid_, attrs->name.c_str()));
     }
     ~thread_model() override { pthread_join(tid_, nullptr); }
   };
@@ -69,13 +98,14 @@ class thread {
   template <typename F, class... Args>
     requires std::invocable<F, Args...>
   explicit thread(F &&f, Args &&...args)
-      : thread{attributes{}, std::forward<F>(f), std::forward<Args>(args)...} {}
+      : pimpl_{std::make_unique<thread_model<F, Args...>>(
+            nullptr, std::forward<F>(f), std::forward<Args>(args)...)} {}
 
   template <typename F, class... Args>
     requires std::invocable<F, Args...>
   explicit thread(const attributes &attr, F &&f, Args &&...args)
       : pimpl_{std::make_unique<thread_model<F, Args...>>(
-            attr, std::forward<F>(f), std::forward<Args>(args)...)} {}
+            &attr, std::forward<F>(f), std::forward<Args>(args)...)} {}
 
   thread() = default;
 };
