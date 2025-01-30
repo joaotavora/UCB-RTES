@@ -51,18 +51,18 @@ class thread {
         : f_{std::move(f)}, args_{std::move(args)...} {
       // Create the thread with specified attributes,
       pthread_attr_t pattrs{};
-      CCALL_OR_LOSE(pthread_attr_init(&pattrs));
+      xpto::or_lose(pthread_attr_init(&pattrs));
       AUTO(pthread_attr_destroy(&pattrs));
 
       cpu_set_t cpuset;
       CPU_ZERO(&cpuset);
       if (attrs.affinity.size()) {
         for (auto x : attrs.affinity) CPU_SET(x, &cpuset);
-        CCALL_OR_LOSE(
+        xpto::or_lose(
                       pthread_attr_setaffinity_np(&pattrs, sizeof(cpuset), &cpuset));
       }
       if (attrs.stack_size){
-        CCALL_OR_LOSE(
+        xpto::or_lose(
                       pthread_attr_setstacksize(&pattrs, attrs.stack_size.value()));
       }
 
@@ -78,7 +78,7 @@ class thread {
           sparam.sched_priority = sched_get_priority_max(attrs.policy.value());
 
         // Not sure if this one is needed
-        CCALL_OR_LOSE(
+        xpto::or_lose(
             sched_setscheduler(getpid(), attrs.policy.value(), &sparam));
 
         pthread_attr_setschedparam(&pattrs, &sparam);
@@ -90,9 +90,9 @@ class thread {
         return nullptr;
       };
 
-      CCALL_OR_LOSE(pthread_create(&tid_, &pattrs, lambda, this));
+      ZCALL_OR_LOSE(pthread_create(&tid_, &pattrs, lambda, this));
       if (attrs.name.size()) {
-        CCALL_OR_LOSE(pthread_setname_np(tid_, attrs.name.c_str()));
+        ZCALL_OR_LOSE(pthread_setname_np(tid_, attrs.name.c_str()));
       }
     }
     ~thread_model() override { pthread_join(tid_, nullptr); }

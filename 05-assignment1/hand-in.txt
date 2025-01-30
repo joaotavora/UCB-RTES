@@ -1,0 +1,4 @@
+Jan 30 13:04:45 krug pthread[823657]: [COURSE:1][ASSIGNMENT:1] Linux krug 6.12.7-arch1-1 #1 SMP PREEMPT_DYNAMIC Fri, 27 Dec 2024 14:24:37 +0000 x86_64 GNU/Linux
+Jan 30 13:04:45 krug pthread[823657]: [COURSE:1][ASSIGNMENT:1] Hello World from Main!
+Jan 30 13:04:45 krug pthread[823657]: [COURSE:1][ASSIGNMENT:1] Hello World from Thread!
+
