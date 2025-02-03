@@ -11,4 +11,5 @@ add_subdirectory(02-incdecthread)
 add_subdirectory(03-twoprocs)
 add_subdirectory(04-simplethread-affinity)
 add_subdirectory(05-assignment1)
+add_subdirectory(06-rt-simplethread)
 

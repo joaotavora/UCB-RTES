@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <sched.h>
 
+#include <cstdio>
 #include <memory>
 #include <optional>
 #include <set>
@@ -13,10 +14,44 @@
 
 namespace xpto {
 
+void dump_scheduler(std::FILE* stream = stdout) {
+  int schedType{}, scope{};
+  pthread_attr_t main_attr;
+
+  schedType = sched_getscheduler(getpid());
+
+  switch (schedType) {
+    case SCHED_FIFO:
+      fprintf(stream, "Pthread Policy is SCHED_FIFO\n");
+      break;
+    case SCHED_OTHER:
+      fprintf(stream, "Pthread Policy is SCHED_OTHER\n");
+      break;
+    case SCHED_RR:
+      fprintf(stream, "Pthread Policy is SCHED_RR\n");
+      break;
+    default:
+      fprintf(stream, "Pthread Policy is UNKNOWN\n");
+  }
+
+  pthread_attr_getscope(&main_attr, &scope);
+
+  if (scope == PTHREAD_SCOPE_SYSTEM)
+    fprintf(stream, "PTHREAD SCOPE SYSTEM\n");
+  else if (scope == PTHREAD_SCOPE_PROCESS)
+    fprintf(stream, "PTHREAD SCOPE PROCESS\n");
+  else
+    fprintf(stream, "PTHREAD SCOPE UNKNOWN\n");
+}
+
 class thread {
  public:
   struct attributes {
-    enum policy_e { FIFO = SCHED_FIFO, RR = SCHED_RR, OTHER = SCHED_OTHER };
+    enum policy_e : char {
+      FIFO = SCHED_FIFO,
+      RR = SCHED_RR,
+      OTHER = SCHED_OTHER
+    };
 
     std::set<int> affinity{};
     std::optional<size_t> stack_size{};
@@ -59,18 +94,18 @@ class thread {
       if (attrs.affinity.size()) {
         for (auto x : attrs.affinity) CPU_SET(x, &cpuset);
         xpto::or_lose(
-                      pthread_attr_setaffinity_np(&pattrs, sizeof(cpuset), &cpuset));
+            pthread_attr_setaffinity_np(&pattrs, sizeof(cpuset), &cpuset));
       }
-      if (attrs.stack_size){
+      if (attrs.stack_size) {
         xpto::or_lose(
-                      pthread_attr_setstacksize(&pattrs, attrs.stack_size.value()));
+            pthread_attr_setstacksize(&pattrs, attrs.stack_size.value()));
       }
 
       if (attrs.policy) {
         pthread_attr_setinheritsched(&pattrs, PTHREAD_EXPLICIT_SCHED);
         pthread_attr_setschedpolicy(&pattrs, attrs.policy.value());
 
-        struct sched_param sparam {};
+        struct sched_param sparam{};
         int prio{};
         if (attrs.prio)
           sparam.sched_priority = attrs.prio.value();
