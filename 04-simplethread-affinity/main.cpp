@@ -50,9 +50,9 @@ int main() {
               }
               auto elapsed = std::chrono::system_clock::now() - start;
 
-              std::println(
-                  "Thread idx={}, sum[0...{}]={}, running on CPU={}, took {}",
-                  i, i, sum, sched_getcpu(), elapsed);
+              std::printf(
+                  "Thread idx=%d, sum[0...%d]=%ld, running on CPU=%d, took %ld\n",
+                  i, i, sum, sched_getcpu(), elapsed.count());
             });
           }
         }};
