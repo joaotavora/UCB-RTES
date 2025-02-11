@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "xpto/thread.hpp"
-#include "xpto/util.hpp"
+#include "xpto/rtes-misc.hpp"
 
 // NOLINTBEGIN(*swappable*)
 int FIB_TEST(unsigned int seqCnt, unsigned int iterCnt) {
@@ -43,17 +43,7 @@ int main() {
 
   xpto::dump_scheduler();
 
-  // Now let's set some stuff for the main process and its single thread
-  sched_param main_param{};
-  xpto::or_lose(sched_getparam(gettid(), &main_param));
-  std::println(
-      "I'll now adjust the priority since it's {} right now (and that probably "
-      "isn't acceptable for SCHED_FIFO)",
-      main_param.sched_priority);
-  main_param.sched_priority = rt_max_prio;
-  xpto::or_lose(sched_setscheduler(gettid(), SCHED_FIFO, &main_param));
-  std::println("New scheduler installed");
-  xpto::dump_scheduler();
+  xpto::install_rt_scheduler();
 
   constexpr size_t k_num_threads = 4;
   constexpr size_t k_sum_iterations = 1000;

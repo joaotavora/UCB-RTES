@@ -3,7 +3,6 @@
 #include <pthread.h>
 #include <sched.h>
 
-#include <cstdio>
 #include <memory>
 #include <optional>
 #include <set>
@@ -13,36 +12,6 @@
 #include "util.hpp"
 
 namespace xpto {
-
-void dump_scheduler(std::FILE* stream = stdout) {
-  int schedType{}, scope{};
-  pthread_attr_t main_attr;
-
-  schedType = sched_getscheduler(getpid());
-
-  switch (schedType) {
-    case SCHED_FIFO:
-      fprintf(stream, "Pthread Policy is SCHED_FIFO\n");
-      break;
-    case SCHED_OTHER:
-      fprintf(stream, "Pthread Policy is SCHED_OTHER\n");
-      break;
-    case SCHED_RR:
-      fprintf(stream, "Pthread Policy is SCHED_RR\n");
-      break;
-    default:
-      fprintf(stream, "Pthread Policy is UNKNOWN\n");
-  }
-
-  pthread_attr_getscope(&main_attr, &scope);
-
-  if (scope == PTHREAD_SCOPE_SYSTEM)
-    fprintf(stream, "PTHREAD SCOPE SYSTEM\n");
-  else if (scope == PTHREAD_SCOPE_PROCESS)
-    fprintf(stream, "PTHREAD SCOPE PROCESS\n");
-  else
-    fprintf(stream, "PTHREAD SCOPE UNKNOWN\n");
-}
 
 class thread {
  public:
