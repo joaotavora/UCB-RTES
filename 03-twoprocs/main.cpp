@@ -5,26 +5,11 @@
 #include <unistd.h>
 
 #include <print>
-#include <stdexcept>
 
 #include "xpto/c_resource.hpp"
+#include "xpto/semaphore.hpp"
 
 namespace xpto {
-struct sem : private xpto::c_resource<::sem_open, ::sem_close, SEM_FAILED> {
-  using c_resource::c_resource;
-
-  void wait() {
-    if (auto res = sem_wait(*this); res < 0)
-      throw std::runtime_error("sem_wait");
-  }
-
-  void post() {
-    if (auto res = sem_post(*this); res < 0)
-      throw std::runtime_error("sem_wait");
-  }
-};
-
-
 void wait1arg(int pid){::waitpid(pid, NULL, 0);}
 struct forked_child : xpto::c_resource<::fork, wait1arg, 0> {
   forked_child() : c_resource{noargs_construct} {}
