@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <chrono>
 
 #define ZCALL_OR_LOSE(func)                                     \
   if (auto res = (func); res != 0) {                            \

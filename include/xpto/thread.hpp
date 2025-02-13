@@ -8,8 +8,8 @@
 #include <set>
 #include <tuple>
 
-#include "auto.hpp"
-#include "util.hpp"
+#include "xpto/auto.hpp"
+#include "xpto/orlose.hpp"
 
 namespace xpto {
 

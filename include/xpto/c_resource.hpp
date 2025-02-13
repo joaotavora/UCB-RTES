@@ -16,8 +16,11 @@ struct fret<R(*)(Args...,...) noexcept> : std::type_identity<R> {};
 template <typename R, typename ... Args>
 struct fret<R(*)(Args...,...)> : std::type_identity<R> {};
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
 template <auto F>
 using fret_t = fret<decltype(F)>::type;
+#pragma GCC diagnostic pop
 
 /** @brief a wrapper for C-style system stuff
  *
