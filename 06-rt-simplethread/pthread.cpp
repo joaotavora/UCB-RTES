@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "xpto/thread.hpp"
-#include "xpto/rtes-misc.hpp"
+#include "xpto/ucbrtes.hpp"
 
 // NOLINTBEGIN(*swappable*)
 int FIB_TEST(unsigned int seqCnt, unsigned int iterCnt) {

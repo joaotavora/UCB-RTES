@@ -268,7 +268,7 @@ void *Sequencer(void *threadp)
 }
 
 
-void main(void)
+int main(void)
 {
     int i, rc, scope;
     cpu_set_t threadcpu;
@@ -380,6 +380,6 @@ void main(void)
 
 
    printf("\nTEST COMPLETE\n");
-
+   return 0;
 }
              

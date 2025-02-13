@@ -10,7 +10,7 @@
 
 #include "xpto/auto.hpp"
 #include "xpto/thread.hpp"  // IWYU pragma: keep
-#include "xpto/util.hpp"
+#include "xpto/orlose.hpp"
 
 std::string exec(const char* cmd) {
   std::array<char, 128> buffer{};
