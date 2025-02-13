@@ -13,4 +13,5 @@ add_subdirectory(04-simplethread-affinity)
 add_subdirectory(05-assignment1)
 add_subdirectory(06-rt-simplethread)
 add_subdirectory(07-hardcoded-sequencer)
+add_subdirectory(08-sequencer-generic)
 
