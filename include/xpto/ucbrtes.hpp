@@ -2,6 +2,7 @@
 
 #include <pthread.h>
 #include <sched.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -29,47 +30,48 @@ static_assert(
 namespace xpto {
 
 void dump_scheduler(std::FILE* stream = stdout) {
-  int schedType{}, scope{};
+  int scope{};
   pthread_attr_t main_attr;
+  syscall(SYS_sched_getattr, gettid(), &main_attr,
+      sizeof(main_attr), 0);
 
-  schedType = sched_getscheduler(getpid());
+  auto pol = sched_getscheduler(gettid());
+  xpto::or_lose(pthread_attr_getscope(&main_attr, &scope));
 
-  switch (schedType) {
-    case SCHED_FIFO:
-      std::println(stream, "Pthread Policy is SCHED_FIFO");
-      break;
-    case SCHED_OTHER:
-      std::println(stream, "Pthread Policy is SCHED_OTHER");
-      break;
-    case SCHED_RR:
-      std::println(stream, "Pthread Policy is SCHED_RR");
-      break;
-    default:
-      std::println(stream, "Pthread Policy is UNKNOWN");
-  }
-
-  pthread_attr_getscope(&main_attr, &scope);
-
-  if (scope == PTHREAD_SCOPE_SYSTEM)
-    std::println(stream, "PTHREAD SCOPE SYSTEM");
-  else if (scope == PTHREAD_SCOPE_PROCESS)
-    std::println(stream, "PTHREAD SCOPE PROCESS");
-  else
-    std::println(stream, "PTHREAD SCOPE UNKNOWN");
+  std::println(
+      stream, "tid:{} policy:{} scope:{}", gettid(),
+      [&]() {
+        switch (pol) {
+          case SCHED_FIFO:
+            return "SCHED_FIFO";
+          case SCHED_OTHER:
+            return "SCHED_OTHER";
+          case SCHED_RR:
+            return "SCHED_RR";
+          default:
+            return "(unknown)";
+        }
+      }(),
+      [&]() {
+        switch (scope) {
+          case PTHREAD_SCOPE_SYSTEM:
+            return "PTHREAD_SCOPE_SYSTEM";
+          case PTHREAD_SCOPE_PROCESS:
+            return "PTHREAD_SCOPE_PROCESS";
+          default:
+            return "(unknown)";
+        }
+      }());
 }
 
-void install_rt_scheduler() {
-  auto rt_max_prio = sched_get_priority_max(SCHED_FIFO);
+void install_rt_scheduler(int prio = sched_get_priority_max(SCHED_FIFO)) {
   // Now let's set some stuff for the main process and its single thread
   sched_param main_param{};
   xpto::or_lose(sched_getparam(gettid(), &main_param));
-  std::println(
-      "I'll now adjust the priority since it's {} right now (and that probably "
-      "isn't acceptable for SCHED_FIFO)",
-      main_param.sched_priority);
-  main_param.sched_priority = rt_max_prio;
+  // adjust priority to something acceptable to SCHED_FIFO (it's probably 0)
+  main_param.sched_priority = prio;
   xpto::or_lose(sched_setscheduler(gettid(), SCHED_FIFO, &main_param));
-  std::println("New RT scheduler installed on current thread");
+  std::println("Installed RT scheduler on tid: {}", gettid());
   xpto::dump_scheduler();
 }
 
@@ -104,17 +106,19 @@ auto work_for(concepts::duration auto dur, std::string blurb = {}) {
   auto iterations = dur / elapsed;
 
   if (!blurb.size()) blurb = std::format("W{}", dur);
-  std::println("I figure I need {} iterations for {}", iterations, dur);
+  std::println("{} need about {} iterations for {}", blurb, iterations, dur);
   return [f, blurb, iterations,
           i = 0](std::chrono::high_resolution_clock::time_point start) mutable {
     std::chrono::high_resolution_clock rt;
     ++i;
     auto t1 =
-      std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(rt.now() - start);
+        std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
+            rt.now() - start);
     std::println("{} start {} @ {} on core {}", blurb, i, t1, sched_getcpu());
     for (auto i = 0; i < iterations; ++i) f();
     auto t2 =
-        std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(rt.now() - start);
+        std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
+            rt.now() - start);
     std::println("{} end   {} @ {} on core {}", blurb, i, t2, sched_getcpu());
   };
 }
