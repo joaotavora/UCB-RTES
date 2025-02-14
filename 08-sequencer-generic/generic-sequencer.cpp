@@ -1,13 +1,10 @@
 #include <chrono>
 #include <cstddef>
-#include <memory>
 #include <numeric>
 #include <print>
 #include <ratio>
-#include <stdexcept>
 #include <string>
-#include <thread>
-#include <vector>
+#include <map>
 
 #include "xpto/semaphore.hpp"
 #include "xpto/syslog.hpp"
@@ -18,74 +15,88 @@ using freq_t = size_t;
 struct service {
   std::string name;
   freq_t frequency;
+  using duration_t = std::chrono::duration<size_t, std::nano>;
+  auto constexpr period() const { return duration_t{std::giga::num / frequency}; }
   size_t cycles{};
   xpto::thread t{};
   xpto::sem sem{name + "sem"};
   bool abort{};
-
-  using duration_t = std::chrono::duration<size_t, std::nano>;
-
-  auto period() { return duration_t{std::giga::num / frequency}; }
 };
 
-using services_t = std::vector<std::unique_ptr<service>>;
+struct step {
+  service::duration_t wait{};
+  std::vector<service*> services{};
+};
+
+using sequence_t = std::vector<step>;
+
+constexpr auto as_seconds(auto duration) {
+  return std::chrono::duration_cast<std::chrono::duration<double>>(duration);
+}
+
+sequence_t sequence(std::span<service> in) {
+  sequence_t retval;
+  std::map<service::duration_t, std::vector<service*>> map;
+
+  using namespace std::chrono_literals;
+  auto hyperperiod = std::accumulate(
+      in.begin(), in.end(), service::duration_t{1},  //
+      [](service::duration_t acc,
+         auto&& s) -> std::chrono::duration<size_t, std::nano> {
+        auto period = s.period();
+        std::println("Period of {} is {}", s.name, s.period());
+        auto ccount = std::lcm(acc.count(), s.period().count());
+        return service::duration_t{ccount};
+      });
+
+  std::println("Hyperperiod is {}", as_seconds(hyperperiod));
+
+  for (auto&& s : in) {
+    auto period = s.period();
+    for (service::duration_t i{0}; i < hyperperiod; i+= period) {
+      map[i].push_back(&s);
+    }
+  }
+
+  std::vector<std::pair<service::duration_t, std::vector<service*>>> hmmm;
+
+  service::duration_t last{0};
+  for (auto&& x : map) {
+    retval.emplace_back(x.first - last, x.second);
+    last = x.first;
+  }
+  return retval;
+}
+
+
+
 
 const xpto::syslogger logger{""};
 
-void sequence(services_t& services) {
-  using namespace std::chrono_literals;
-
-  auto elapsed = service::duration_t{};
-
-  for (auto&& s : services) {
-    s->t = xpto::thread({}, [&]() {
-      while (!s->abort) {
-        s->sem.wait();
-        if (s->abort) break;
-        ++s->cycles;
-        logger.debug("start: {} @ {}", s->name,
-            std::chrono::duration_cast<std::chrono::duration<double>>(elapsed));
-      }
-      logger.debug("done: {} ", s->name);
-    });
-  }
-
-  auto quantum = std::accumulate(
-      services.begin(), services.end(), 1'000'000'000ns,  //
-      [](service::duration_t acc,
-         auto&& s) -> std::chrono::duration<size_t, std::nano> {
-        auto period = s->period();
-        if (period > 1s)
-          throw std::runtime_error("No support for frequencies less than 1Hz");
-        auto ccount = std::gcd(acc.count(), s->period().count());
-        return service::duration_t{ccount};
-      });
-  logger.debug("The gcd is {}", quantum);
-
-  while (elapsed < 3s) {
-    for (auto&& s : services) {
-      if (elapsed % s->period() == 0s) {
-        s->sem.post();
-      }
-    }
-    std::this_thread::sleep_for(quantum);
-    elapsed+=quantum;
-  }
-
-  for (auto&& s : services) {
-    s->sem.post();
-    s->abort = true;
-  }
-}
-
 int main() {
+
+  auto services = std::array<service, 3>{
+    service{"bla", 30},
+    service{"bla", 3},
+    service{"bla", 1},
+  };
+
+  auto const myseq = sequence(services);
+
+  for (auto&& x : myseq) {
+    std::print("{} -> [", as_seconds(x.wait));
+    auto sep = "";
+    for (auto&& y : x.services) {
+      std::print("{}{}", sep, y->name);
+      sep = ", ";
+    }
+    std::println("]");
+  }
+  
   std::chrono::steady_clock stc;
 
-  services_t services{};
-
-  services.emplace_back(std::make_unique<service>("s1", 10));
-  services.emplace_back(std::make_unique<service>("s2", 50));
-  sequence(services);
+  // services.emplace_back(std::make_unique<service>("s1", 10));
+  // services.emplace_back(std::make_unique<service>("s2", 50));
 
   
 }
