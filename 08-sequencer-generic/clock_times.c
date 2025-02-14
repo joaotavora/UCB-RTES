@@ -93,6 +93,16 @@ int main(int argc, char *argv[])
 	else {perror("nanosleep"); exit(-1);};
     }
 
+    printf("\n");
+
+    for(idx=0; idx < DELAY_LOOPS; idx++)
+    {
+        printf("idx=%d ", idx); displayClock(CLOCK_MONOTONIC_COARSE, "CLOCK_MONOTONIC_COARSE", showRes);
+        if(rc=nanosleep(&delay_time, &remaining_time) == 0)
+            displayClock(CLOCK_MONOTONIC_COARSE, "CLOCK_MONOTONIC_COARSE", showRes);
+	else {perror("nanosleep"); exit(-1);};
+    }
+
 
     exit(EXIT_SUCCESS);
 }

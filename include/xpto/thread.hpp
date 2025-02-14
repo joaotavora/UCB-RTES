@@ -27,8 +27,6 @@ class thread {
     std::string name{};
     std::optional<policy_e> policy{};
     std::optional<int> prio{};
-
-   private:
   };
 
  private:
@@ -99,7 +97,11 @@ class thread {
         ZCALL_OR_LOSE(pthread_setname_np(tid_, attrs.name.c_str()));
       }
     }
-    ~thread_model() override { pthread_join(tid_, nullptr); }
+    ~thread_model() override {
+      // FIXME: check joinable threads (errcode)
+      // FIXME: make don't do this, add join method instead
+      if (tid_) pthread_join(tid_, nullptr);
+    }
   };
 
   std::unique_ptr<thread_interface> pimpl_;
