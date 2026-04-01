@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.30)
 project(UCB-RTES LANGUAGES C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 
 add_library(xpto-lib INTERFACE)
 target_include_directories(xpto-lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
