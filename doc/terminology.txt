@@ -2394,3 +2394,7 @@ through a system API call – e.g. in VxWorks pause(). Yields may
 include transition from executing to pending, delayed, or suspended
 states. Note: In a priority preemption, a thread will transition from
 executing to ready.
+
+<!-- Local Variables: -->
+<!-- mode: markdown -->
+<!-- End: -->

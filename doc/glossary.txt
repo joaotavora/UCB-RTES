@@ -1,1 +1,0 @@
-/home/capitaomorte/Source/Cpp/UCB-RTES/doc/terminology.txt
