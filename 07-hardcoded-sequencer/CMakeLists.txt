@@ -6,16 +6,5 @@ add_executable(07-hardcoded-sequencer-c lab1.c)
 set_target_properties(07-hardcoded-sequencer PROPERTIES OUTPUT_NAME sequencer)
 set_target_properties(07-hardcoded-sequencer-c PROPERTIES OUTPUT_NAME lab1)
 
-add_custom_command(TARGET 07-hardcoded-sequencer POST_BUILD
-  COMMENT "Setting capabilities on '$<TARGET_FILE:07-hardcoded-sequencer>'"
-  # man 7 capabilities tells about CAP_SYS_NICE
-  #
-  # man 3 cap_from_text tells about what +ep achieves (adds 'effective'
-  # and 'permitted' to that capability)
-  COMMAND sudo setcap CAP_SYS_NICE+ep $<TARGET_FILE:07-hardcoded-sequencer>
-)
-
-add_custom_command(TARGET 07-hardcoded-sequencer-c POST_BUILD
-  COMMENT "Setting capabilities on '$<TARGET_FILE:07-hardcoded-sequencer-c>'"
-  COMMAND sudo setcap CAP_SYS_NICE+ep $<TARGET_FILE:07-hardcoded-sequencer-c>
-)
+xpto_grant_cap_sys_nice(07-hardcoded-sequencer)
+xpto_grant_cap_sys_nice(07-hardcoded-sequencer-c)
