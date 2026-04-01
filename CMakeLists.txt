@@ -3,6 +3,13 @@ project(UCB-RTES LANGUAGES C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 26)
 
+function(xpto_grant_cap_sys_nice target)
+  add_custom_command(TARGET ${target} POST_BUILD
+    COMMENT "Setting capabilities on '$<TARGET_FILE:${target}>'"
+    COMMAND sudo setcap CAP_SYS_NICE+ep $<TARGET_FILE:${target}>
+  )
+endfunction()
+
 add_library(xpto-lib INTERFACE)
 target_include_directories(xpto-lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
