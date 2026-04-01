@@ -70,7 +70,7 @@ int main() {
             hrc.now() - start);
         return event_time;
       };
-      auto major_periods = 300;
+      auto major_periods = 3;
 
       while (major_periods--) {
         // Basic sequence of releases after CI for 90% load
