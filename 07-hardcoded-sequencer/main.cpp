@@ -1,6 +1,6 @@
 #include <atomic>
 #include <chrono>
-#include <print>
+#include <fmt/chrono.h>
 #include <thread>
 
 #include "xpto/semaphore.hpp"
@@ -63,7 +63,7 @@ int main() {
       .prio = rt_max_prio - 0,
     },
     [&]() {
-      std::println("Starting!");
+      fmt::println("Starting!");
       start = hrc.now();
       auto event_time = 0ms;
       auto mark = [&]() {
@@ -101,28 +101,28 @@ int main() {
         //
 
         // Simulate the C.I. for S1 and S2 and timestamp in log
-        std::println("\n**** CI t={}", mark());
+        fmt::println("\n**** CI t={}", mark());
         semf10.post();
         semf20.post();
 
         std::this_thread::sleep_for(20ms);
-        std::println("t={}", mark());
+        fmt::println("t={}", mark());
         semf10.post();
 
         std::this_thread::sleep_for(20ms);
-        std::println("t={}", mark());
+        fmt::println("t={}", mark());
         semf10.post();
 
         std::this_thread::sleep_for(10ms);
-        std::println("t={}", mark());
+        fmt::println("t={}", mark());
         semf20.post();
 
         std::this_thread::sleep_for(10ms);
-        std::println("t={}", mark());
+        fmt::println("t={}", mark());
         semf10.post();
 
         std::this_thread::sleep_for(20ms);
-        std::println("t={}", mark());
+        fmt::println("t={}", mark());
         semf10.post();
 
         std::this_thread::sleep_for(20ms);

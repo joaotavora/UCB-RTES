@@ -8,7 +8,8 @@
 #include <chrono>
 #include <cstdio>
 #include <format>
-#include <print>
+
+#include <fmt/chrono.h>
 
 #include "xpto/orlose.hpp"
 
@@ -38,7 +39,7 @@ void dump_scheduler(std::FILE* stream = stdout) {
   auto pol = sched_getscheduler(gettid());
   xpto::or_lose(pthread_attr_getscope(&main_attr, &scope));
 
-  std::println(
+  fmt::println(
       stream, "tid:{} policy:{} scope:{}", gettid(),
       [&]() {
         switch (pol) {
@@ -71,7 +72,7 @@ void install_rt_scheduler(int prio = sched_get_priority_max(SCHED_FIFO)) {
   // adjust priority to something acceptable to SCHED_FIFO (it's probably 0)
   main_param.sched_priority = prio;
   xpto::or_lose(sched_setscheduler(gettid(), SCHED_FIFO, &main_param));
-  std::println("Installed RT scheduler on tid: {}", gettid());
+  fmt::println("Installed RT scheduler on tid: {}", gettid());
   xpto::dump_scheduler();
 }
 
@@ -106,7 +107,7 @@ auto work_for(concepts::duration auto dur, std::string blurb = {}) {
   auto iterations = dur / elapsed;
 
   if (!blurb.size()) blurb = std::format("W{}", dur);
-  std::println("{} need about {} iterations for {}", blurb, iterations, dur);
+  fmt::println("{} need about {} iterations for {}", blurb, iterations, dur);
   return [f, blurb, iterations,
           i = 0](std::chrono::high_resolution_clock::time_point start) mutable {
     std::chrono::high_resolution_clock rt;
@@ -114,12 +115,12 @@ auto work_for(concepts::duration auto dur, std::string blurb = {}) {
     auto t1 =
         std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
             rt.now() - start);
-    std::println("{} start {} @ {} on core {}", blurb, i, t1, sched_getcpu());
+    fmt::println("{} start {} @ {} on core {}", blurb, i, t1, sched_getcpu());
     for (auto i = 0; i < iterations; ++i) f();
     auto t2 =
         std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
             rt.now() - start);
-    std::println("{} end   {} @ {} on core {}", blurb, i, t2, sched_getcpu());
+    fmt::println("{} end   {} @ {} on core {}", blurb, i, t2, sched_getcpu());
   };
 }
 

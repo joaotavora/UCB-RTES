@@ -1,6 +1,6 @@
 #include <chrono>
 #include <ctime>
-#include <print>
+#include <fmt/chrono.h>
 
 namespace xpto {
 
@@ -53,18 +53,18 @@ int main() {
   {
     auto t1 = hrc.now();
     for (auto i = 0; i < 1000000; ++i) hrc.now();
-    std::println("std::chrono::high_resolution_clock took {}", hrc.now() - t1);
+    fmt::println("std::chrono::high_resolution_clock took {}", hrc.now() - t1);
   }
 
   {
     auto t1 = hrc.now();
     for (auto i = 0; i < 1000000; ++i) stc.now();
-    std::println("std::chrono::steady_clock took {}", hrc.now() - t1);
+    fmt::println("std::chrono::steady_clock took {}", hrc.now() - t1);
   }
 
   {
     auto t1 = hrc.now();
     for (auto i = 0; i < 1000000; ++i) fmc.now();
-    std::println("xpto::fast_monotonic_clock took {}", hrc.now() - t1);
+    fmt::println("xpto::fast_monotonic_clock took {}", hrc.now() - t1);
   }
 }

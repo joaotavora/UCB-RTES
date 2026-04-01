@@ -11,7 +11,9 @@ function(xpto_grant_cap_sys_nice target)
 endfunction()
 
 add_library(xpto-lib INTERFACE)
+find_package(fmt REQUIRED)
 target_include_directories(xpto-lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(xpto-lib INTERFACE fmt::fmt)
 
 add_subdirectory(01-simplethread)
 add_subdirectory(02-incdecthread)

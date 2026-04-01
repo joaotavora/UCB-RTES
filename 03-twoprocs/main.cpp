@@ -4,7 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <print>
+#include <fmt/core.h>
 
 #include "xpto/c_resource.hpp"
 #include "xpto/semaphore.hpp"
@@ -20,7 +20,7 @@ struct forked_child : xpto::c_resource<::fork, wait1arg, 0> {
 
 int main() {
   try {
-    std::println("Two procs");
+    fmt::println("Two procs");
 
     xpto::sem child_sem{"/childsem", O_CREAT, 0700, 0};
     xpto::sem parent_sem{"/parentsem", O_CREAT, 0700, 0};
@@ -29,24 +29,24 @@ int main() {
 
     if (child.empty()) {
       for (auto i = 0; i < 3; ++i){
-        std::println("Child: taking child_sem");
+        fmt::println("Child: taking child_sem");
         child_sem.wait();
-        std::println("Child: posting parent_sem");
+        fmt::println("Child: posting parent_sem");
         parent_sem.post();
       }
-      std::println("Child: say bye bye!");
+      fmt::println("Child: say bye bye!");
     } else {
       for (auto i = 0; i < 3; ++i){
-        std::println("Parent: posting child_sem");
+        fmt::println("Parent: posting child_sem");
         child_sem.post();
-        std::println("Parent: taking parent_sem");
+        fmt::println("Parent: taking parent_sem");
         parent_sem.wait();
       }
       child.clear();
-      std::println("Parent: say bye bye!");
+      fmt::println("Parent: say bye bye!");
     }
   } catch (std::exception e) {
-    std::println(stderr, "Ooops {}", e.what());
+    fmt::println(stderr, "Ooops {}", e.what());
   }
 
 }

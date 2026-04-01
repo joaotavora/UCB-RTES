@@ -1,5 +1,5 @@
 #include <chrono>
-#include <print>
+#include <fmt/core.h>
 #include <vector>
 
 #include "xpto/thread.hpp"
@@ -9,16 +9,16 @@ void print_scheduler(void) {
 
   switch (schedType) {
     case SCHED_FIFO:
-      std::println("Pthread policy is SCHED_FIFO");
+      fmt::println("Pthread policy is SCHED_FIFO");
       break;
     case SCHED_OTHER:
-      std::println("Pthread policy is SCHED_OTHER");
+      fmt::println("Pthread policy is SCHED_OTHER");
       break;
     case SCHED_RR:
-      std::println("Pthread policy is SCHED_RR");
+      fmt::println("Pthread policy is SCHED_RR");
       break;
     default:
-      std::println("Pthread policy is UNKNOWN");
+      fmt::println("Pthread policy is UNKNOWN");
   }
 }
 // use FIFO RT max priority attributes
@@ -30,13 +30,13 @@ const xpto::thread::attributes fifo_rt_max_prio_attrs{
 
 int main() {
   {
-    std::println("Main thread running on CPU={}", sched_getcpu());
+    fmt::println("Main thread running on CPU={}", sched_getcpu());
     print_scheduler();
     std::vector<xpto::thread> threads;
 
     xpto::thread t{
         fifo_rt_max_prio_attrs, [&]() {
-          std::println("Starter thread running on CPU={}", sched_getcpu());
+          fmt::println("Starter thread running on CPU={}", sched_getcpu());
           print_scheduler();
 
           for (auto i = 0; i < 64; i++) {
@@ -56,6 +56,6 @@ int main() {
             });
           }
         }};
-    std::println("main thread: Joining...");
+    fmt::println("main thread: Joining...");
   }
 }

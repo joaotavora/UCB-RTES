@@ -1,5 +1,5 @@
 #include <thread>
-#include <print>
+#include <fmt/core.h>
 
 int gsum = 0; // NOT safe  (NOLINT)
 static constexpr int count = 10000;
@@ -21,6 +21,6 @@ int main() {
   t1.join();
   t2.join();
 
-  std::println("Finally gsum = {}", gsum);
+  fmt::println("Finally gsum = {}", gsum);
   
 }

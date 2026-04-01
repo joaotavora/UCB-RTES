@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include <chrono>
-#include <print>
+#include <fmt/chrono.h>
 #include <vector>
 
 #include "xpto/thread.hpp"
@@ -30,16 +30,16 @@ int FIB_TEST(unsigned int seqCnt, unsigned int iterCnt) {
 }
 
 int main() {
-  std::println("This system has {} processors with {} available",
+  fmt::println("This system has {} processors with {} available",
                get_nprocs_conf(), get_nprocs());
-  std::println(
+  fmt::println(
       "The test thread created will be SCHED_FIFO, is run with sudo and will be"
       "run on least busy core");
 
   auto rt_max_prio = sched_get_priority_max(SCHED_FIFO);
   auto rt_min_prio = sched_get_priority_min(SCHED_FIFO);
-  std::println("rt_max_prio={}", rt_max_prio);
-  std::println("rt_min_prio={}", rt_min_prio);
+  fmt::println("rt_max_prio={}", rt_max_prio);
+  fmt::println("rt_min_prio={}", rt_min_prio);
 
   xpto::dump_scheduler();
 
@@ -67,7 +67,7 @@ int main() {
       auto seconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed);
       auto subsecond = elapsed - seconds;
 
-      std::println(
+      fmt::println(
           "Thread idx={} ran {} sec and ({} msec {} microsec {} nsec) on core "
           "{}",
           idx, seconds,

@@ -1,5 +1,6 @@
 add_executable(08-clock-times clock_times.c)
 add_executable(08-clock-overhead clock-overhead.cpp)
+target_link_libraries(08-clock-overhead PRIVATE fmt::fmt)
 add_executable(08-generic-sequencer generic-sequencer.cpp)
 target_link_libraries(08-generic-sequencer PRIVATE xpto-lib)
 
