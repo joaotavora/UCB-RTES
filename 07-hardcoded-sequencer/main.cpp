@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <print>
 #include <thread>
@@ -13,7 +14,7 @@ int main() {
   using namespace std::chrono_literals;
   auto work20 = xpto::work_for(20ms, "t20");
   auto work10 = xpto::work_for(10ms, "t10");
-  bool abort_test = false;
+  std::atomic<bool> abort_test{false};
 
   auto rt_max_prio = sched_get_priority_max(SCHED_FIFO);
   xpto::sem semf10{};
@@ -126,8 +127,8 @@ int main() {
 
         std::this_thread::sleep_for(20ms);
       }
+      abort_test = true;
       semf20.post();
       semf10.post();
-      abort_test = true;
     }};
 }

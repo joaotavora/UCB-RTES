@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <print>
@@ -22,7 +23,7 @@ struct service {
   size_t cycles{};
   xpto::sem sem{name + "sem"};
   xpto::thread t{};
-  bool abort{};
+  std::atomic<bool> abort{};
 
   duration_t constexpr period() const {
     return duration_t{std::giga::num / frequency};
