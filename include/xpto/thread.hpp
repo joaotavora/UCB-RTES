@@ -2,11 +2,13 @@
 
 #include <pthread.h>
 #include <sched.h>
+#include <unistd.h>
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <set>
-#include <tuple>
+#include <string>
 
 #include "xpto/auto.hpp"
 #include "xpto/orlose.hpp"
@@ -32,30 +34,32 @@ class thread {
  private:
   struct thread_interface {
     thread_interface() = default;
-    thread_interface(const thread_interface &) = delete;
-    thread_interface(thread_interface &&) = default;
-    thread_interface &operator=(const thread_interface &) = delete;
-    thread_interface &operator=(thread_interface &&) = default;
+    thread_interface(const thread_interface&) = delete;
+    thread_interface(thread_interface&&) = default;
+    thread_interface& operator=(const thread_interface&) = delete;
+    thread_interface& operator=(thread_interface&&) = default;
     virtual ~thread_interface() = default;
   };
 
-  template <typename F, typename... Args>
+  // The trampoline runs with a pointer to this heap-allocated model,
+  // which never moves: thread objects transfer the pointer, not the
+  // storage, so a started thread can be moved safely.
+  template <typename F>
   struct thread_model : thread_interface {
-    pthread_t tid_{};
-    F f_;
-    std::tuple<Args...> args_;
-    thread_model(const thread_model &) = delete;
-    thread_model(thread_model &&) = default;
-    thread_model &operator=(const thread_model &) = delete;
-    thread_model &operator=(thread_model &&) = default;
+    pthread_t tid{};
+    F f;
 
-    thread_model(const attributes &attrs, F f, Args... args)
-        : f_{std::move(f)}, args_{std::move(args)...} {
+    thread_model(const thread_model&) = delete;
+    thread_model(thread_model&&) = default;
+    thread_model& operator=(const thread_model&) = delete;
+    thread_model& operator=(thread_model&&) = default;
+
+    thread_model(const attributes& attrs, F f) : f{std::move(f)} {
       // Create the thread with specified attributes,
       pthread_attr_t pattrs{};
       xpto::or_lose(pthread_attr_init(&pattrs));
       AUTO(pthread_attr_destroy(&pattrs));
-
+ 
       cpu_set_t cpuset;
       CPU_ZERO(&cpuset);
       if (attrs.affinity.size()) {
@@ -86,38 +90,36 @@ class thread {
         pthread_attr_setschedparam(&pattrs, &sparam);
       }
 
-      auto lambda = [](void *arg) -> void * {
-        auto self = static_cast<thread_model *>(arg);
-        std::apply(self->f_, self->args_);
+      auto lambda = [](void* arg) -> void* {
+        auto self = static_cast<thread_model*>(arg);
+        std::invoke(self->f);
         return nullptr;
       };
 
-      ZCALL_OR_LOSE(pthread_create(&tid_, &pattrs, lambda, this));
+      ZCALL_OR_LOSE(pthread_create(&tid, &pattrs, lambda, this));
       if (attrs.name.size()) {
-        ZCALL_OR_LOSE(pthread_setname_np(tid_, attrs.name.c_str()));
+        ZCALL_OR_LOSE(pthread_setname_np(tid, attrs.name.c_str()));
       }
     }
+
     ~thread_model() override {
       // FIXME: check joinable threads (errcode)
       // FIXME: make don't do this, add join method instead
-      if (tid_) pthread_join(tid_, nullptr);
+      if (tid) pthread_join(tid, nullptr);
     }
   };
 
-  std::unique_ptr<thread_interface> pimpl_;
+  std::unique_ptr<thread_interface> m_pimpl{};
 
  public:
-  template <typename F, class... Args>
-    requires std::invocable<F, Args...>
-  explicit thread(F &&f, Args &&...args)
-      : pimpl_{std::make_unique<thread_model<F, Args...>>(
-            attributes{}, std::forward<F>(f), std::forward<Args>(args)...)} {}
+  template <typename F>
+    requires std::invocable<F>
+  explicit thread(F&& f) : thread{attributes{}, std::forward<F>(f)} {}
 
-  template <typename F, class... Args>
-    requires std::invocable<F, Args...>
-  explicit thread(const attributes &attr, F &&f, Args &&...args)
-      : pimpl_{std::make_unique<thread_model<F, Args...>>(
-            attr, std::forward<F>(f), std::forward<Args>(args)...)} {}
+  template <typename F>
+    requires std::invocable<F>
+  explicit thread(attributes a, F&& f)
+      : m_pimpl{std::make_unique<thread_model<F>>(a, std::forward<F>(f))} {}
 
   thread() = default;
 };
