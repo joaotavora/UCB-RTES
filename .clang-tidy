@@ -1,1 +1,9 @@
-Checks: cppcoreguidelines-*, bugprone-*, performance-*, -*magic-numbers*, -*pro-type-vararg, -*easily-swappable*
+Checks: cppcoreguidelines-*, bugprone-*, performance-*, -*magic-numbers*, -*pro-type-vararg, -*easily-swappable*, readability-identifier-naming
+
+CheckOptions:
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: m_
+  - key: readability-identifier-naming.PublicMemberSuffix
+    value: ''
