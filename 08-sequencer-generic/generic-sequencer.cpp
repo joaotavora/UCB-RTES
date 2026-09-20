@@ -22,13 +22,10 @@ struct service {
   duration_t phase{};
 
   size_t cycles{};
+  size_t releases{};  // sequencer thread's release counter
   xpto::sem sem{name + "sem"};
   xpto::thread t{};
   std::atomic<bool> abort{};
-
-  duration_t constexpr period() const {
-    return duration_t{std::giga::num / frequency};
-  }
 };
 
 using seconds_float_t = std::chrono::duration<double>;
@@ -84,7 +81,15 @@ int main() {
                  seconds_float_t{elapsed.load(std::memory_order_relaxed)});
     x.sem.post();
     queue.pop();
-    queue.emplace(elapsed.load(std::memory_order_relaxed) + x.period(), &x);
+    ++x.releases;
+    // Absolute deadline from the phase: the division truncates each
+    // deadline by at most 1 ns, but unlike adding a truncated period
+    // on every release, the error never accumulates.
+    auto next =
+        x.phase + service::duration_t{static_cast<int64_t>(x.releases) *
+                                      std::giga::num /
+                                      static_cast<int64_t>(x.frequency)};
+    queue.emplace(next, &x);
   } while (elapsed.load(std::memory_order_relaxed) < 3s);
 
   auto clock_elapsed = stc.now() - t1;
