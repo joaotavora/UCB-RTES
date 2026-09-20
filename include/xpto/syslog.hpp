@@ -1,7 +1,10 @@
 #include <sys/syslog.h>
 #include <syslog.h>
 
-#include <format>
+#include <array>
+#include <cstddef>
+#include <fmt/format.h>
+#include <string>
 
 namespace xpto {
 
@@ -14,13 +17,17 @@ class syslogger {
 
   template <typename... Args>
   void syslog(
-      unsigned int prio, std::format_string<const Args&...> fmt,
+      int prio, fmt::format_string<const Args&...> fmt,
       const Args&... args) const {
-    ::syslog(prio, prefix_.c_str(), std::format(fmt, args...).c_str());
+    std::array<char, 1024> buf{};
+    auto cap = static_cast<std::ptrdiff_t>(buf.size() - 1);
+    auto res = fmt::format_to_n(buf.data(), cap, fmt, args...);
+    *res.out = '\0';
+    ::syslog(prio, prefix_.c_str(), buf.data());
   }
 
   template <typename... Args>
-  void debug(std::format_string<const Args&...> fmt, const Args&... args) const {
+  void debug(fmt::format_string<const Args&...> fmt, const Args&... args) const {
     syslog(LOG_DEBUG, fmt, args...);
   }
 };

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <fmt/chrono.h>
 #include <queue>
 #include <ratio>
 #include <string>
