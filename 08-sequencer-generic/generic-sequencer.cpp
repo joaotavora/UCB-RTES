@@ -7,6 +7,8 @@
 #include <ratio>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include "xpto/semaphore.hpp"
 #include "xpto/syslog.hpp"
@@ -53,7 +55,11 @@ int main() {
   auto services =
       std::array{service{"t1", 10}, service{"t2", 3}, service{"t3", 1}};
 
-  queue_t queue;
+  // Reserve so the schedule never touches the heap, not even on the
+  // first releases.
+  std::vector<queue_element_t> storage;
+  storage.reserve(services.size());
+  queue_t queue{earliest_deadline{}, std::move(storage)};
   std::atomic<service::duration_t> elapsed{service::duration_t{0}};
 
   for (auto&& x : services) {
