@@ -2,6 +2,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <queue>
 #include <ratio>
 #include <string>
@@ -14,7 +15,7 @@
 using freq_t = size_t;
 
 struct service {
-  using duration_t = std::chrono::duration<size_t, std::nano>;
+  using duration_t = std::chrono::duration<int64_t, std::nano>;
 
   std::string name;
   freq_t frequency;
@@ -73,6 +74,9 @@ int main() {
     if (rem > 0s) {
       std::this_thread::sleep_for(rem);
       elapsed = top.first;
+    } else if (rem < 0s) {
+      logger.debug("deadline for {} missed by {}", x.name,
+                   seconds_float_t{-rem});
     }
     logger.debug("signalling {} @ {}", x.name, seconds_float_t{elapsed});
     x.sem.post();
