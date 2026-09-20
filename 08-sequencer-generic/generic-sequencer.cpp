@@ -32,9 +32,20 @@ using seconds_float_t = std::chrono::duration<double>;
 using milliseconds_float_t = std::chrono::duration<double, std::milli>;
 
 using queue_element_t = std::pair<service::duration_t, service*>;
+
+// Min-heap on deadline.  Ties break deterministically by service
+// address order (std::less provides the total order that built-in
+// pointer comparison doesn't).
+struct earliest_deadline {
+  bool operator()(queue_element_t const& a, queue_element_t const& b) const {
+    if (a.first != b.first) return a.first > b.first;
+    return std::less<service*>{}(b.second, a.second);
+  }
+};
+
 using queue_t =
     std::priority_queue<queue_element_t, std::vector<queue_element_t>,
-                        std::greater<queue_element_t>>;
+                        earliest_deadline>;
 
 const xpto::syslogger logger{""};
 
