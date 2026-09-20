@@ -1,3 +1,4 @@
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -33,18 +34,15 @@ using seconds_float_t = std::chrono::duration<double>;
 using milliseconds_float_t = std::chrono::duration<double, std::milli>;
 
 using queue_element_t = std::pair<service::duration_t, service*>;
-using queue_t = std::priority_queue<
-    queue_element_t, std::vector<queue_element_t>,
-    std::greater<queue_element_t>>;
+using queue_t =
+    std::priority_queue<queue_element_t, std::vector<queue_element_t>,
+                        std::greater<queue_element_t>>;
 
 const xpto::syslogger logger{""};
 
 int main() {
-  auto services = std::array<service, 3>{
-    service{"t1", 10},
-    service{"t2", 3},
-    service{"t3", 1},
-  };
+  auto services =
+      std::array{service{"t1", 10}, service{"t2", 3}, service{"t3", 1}};
 
   queue_t queue;
   service::duration_t elapsed{0};
@@ -55,9 +53,7 @@ int main() {
         x.sem.wait();
         if (x.abort) break;
         ++x.cycles;
-        logger.debug(
-            "start: {} @ {}", x.name,
-            seconds_float_t(elapsed));
+        logger.debug("start: {} @ {}", x.name, seconds_float_t(elapsed));
       }
       logger.debug("done: {} ", x.name);
     });
@@ -66,12 +62,11 @@ int main() {
 
   logger.debug("queue has {} elements", queue.size());
 
-
   std::chrono::steady_clock stc;
   auto t1 = stc.now();
 
   using namespace std::chrono_literals;
-  do { // NOLINT
+  do {  // NOLINT
     auto& top = queue.top();
     auto& x = *top.second;
     auto rem = top.first - elapsed;
@@ -87,10 +82,8 @@ int main() {
 
   auto clock_elapsed = stc.now() - t1;
 
-  logger.debug("elapsed: {} clock_elapsed: {} diff {}",
-    elapsed,
-    clock_elapsed,
-      milliseconds_float_t{clock_elapsed-elapsed});
+  logger.debug("elapsed: {} clock_elapsed: {} diff {}", elapsed, clock_elapsed,
+               milliseconds_float_t{clock_elapsed - elapsed});
 
   for (auto&& x : services) {
     x.abort = true;

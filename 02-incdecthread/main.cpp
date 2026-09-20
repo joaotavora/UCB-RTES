@@ -1,26 +1,26 @@
-#include <thread>
+#include <atomic>
 #include <fmt/core.h>
 
-int gsum = 0; // NOT safe  (NOLINT)
+#include "xpto/thread.hpp"
+
+int gsum = 0;  // NOT safe (NOLINT)
+std::atomic<int> agsum{0};  // safe (NOLINT)
 static constexpr int count = 10000;
 
 int main() {
-  std::thread t1{[&]() {
-    for (auto i = 0; i < count ; ++i) {
+  xpto::thread t1{[&]() {
+    for (auto i = 0; i < count; ++i) {
       gsum++;
-      // println("Increment thread idx={} gsum={}", std::this_thread::get_id(), gsum);
+      agsum++;
     }
   }};
 
-  std::thread t2{[&]() {
-    for (auto i = 0; i < count ; ++i) {
+  xpto::thread t2{[&]() {
+    for (auto i = 0; i < count; ++i) {
       gsum--;
-      // println("Decrement thread idx={} gsum={}", std::this_thread::get_id(), gsum);
+      agsum--;
     }
   }};
-  t1.join();
-  t2.join();
 
-  fmt::println("Finally gsum = {}", gsum);
-  
+  fmt::println("Finally gsum = {} agsum = {}", gsum, agsum.load());
 }
