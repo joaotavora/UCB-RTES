@@ -31,6 +31,11 @@ struct service {
   std::atomic<bool> abort{};
 };
 
+// 'elapsed' below is shared with the service threads; updating it must
+// be lock-free, or the timing loop would pay for locks on every release.
+static_assert(std::atomic<service::duration_t>::is_always_lock_free,
+              "sequencer clock requires lock-free 64-bit atomics");
+
 using seconds_float_t = std::chrono::duration<double>;
 using milliseconds_float_t = std::chrono::duration<double, std::milli>;
 
