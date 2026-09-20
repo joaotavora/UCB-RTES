@@ -46,7 +46,7 @@ int main() {
       std::array{service{"t1", 10}, service{"t2", 3}, service{"t3", 1}};
 
   queue_t queue;
-  service::duration_t elapsed{0};
+  std::atomic<service::duration_t> elapsed{service::duration_t{0}};
 
   for (auto&& x : services) {
     x.t = xpto::thread({}, [&]() {
@@ -54,7 +54,9 @@ int main() {
         x.sem.wait();
         if (x.abort) break;
         ++x.cycles;
-        logger.debug("start: {} @ {}", x.name, seconds_float_t(elapsed));
+        logger.debug("start: {} @ {}", x.name,
+                     seconds_float_t(
+                         elapsed.load(std::memory_order_relaxed)));
       }
       logger.debug("done: {} ", x.name);
     });
@@ -70,24 +72,26 @@ int main() {
   do {  // NOLINT
     auto& top = queue.top();
     auto& x = *top.second;
-    auto rem = top.first - elapsed;
+    auto rem = top.first - elapsed.load(std::memory_order_relaxed);
     if (rem > 0s) {
       std::this_thread::sleep_for(rem);
-      elapsed = top.first;
+      elapsed.store(top.first, std::memory_order_relaxed);
     } else if (rem < 0s) {
       logger.debug("deadline for {} missed by {}", x.name,
                    seconds_float_t{-rem});
     }
-    logger.debug("signalling {} @ {}", x.name, seconds_float_t{elapsed});
+    logger.debug("signalling {} @ {}", x.name,
+                 seconds_float_t{elapsed.load(std::memory_order_relaxed)});
     x.sem.post();
     queue.pop();
-    queue.emplace(elapsed + x.period(), &x);
-  } while (elapsed < 3s);
+    queue.emplace(elapsed.load(std::memory_order_relaxed) + x.period(), &x);
+  } while (elapsed.load(std::memory_order_relaxed) < 3s);
 
   auto clock_elapsed = stc.now() - t1;
+  auto el = elapsed.load(std::memory_order_relaxed);
 
-  logger.debug("elapsed: {} clock_elapsed: {} diff {}", elapsed, clock_elapsed,
-               milliseconds_float_t{clock_elapsed - elapsed});
+  logger.debug("elapsed: {} clock_elapsed: {} diff {}", el, clock_elapsed,
+               milliseconds_float_t{clock_elapsed - el});
 
   for (auto&& x : services) {
     x.abort = true;
